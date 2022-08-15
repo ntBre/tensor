@@ -1,4 +1,5 @@
 use std::{
+    fmt::Display,
     io::BufRead,
     io::BufReader,
     ops::{Index, IndexMut, Neg},
@@ -17,22 +18,11 @@ impl Tensor3 {
     }
 
     pub fn print(&self) {
-        println!();
-        for mat in &self.0 {
-            for row in mat {
-                for col in row {
-                    print!("{:12.6}", col);
-                }
-                println!();
-            }
-            println!();
-            println!();
-        }
+        println!("{}", self);
     }
 
     pub fn load(filename: &str) -> Self {
-        let f =
-            std::fs::File::open(filename).expect("failed to open tensor file");
+        let f = std::fs::File::open(filename).expect("failed to open tensor file");
         let lines = BufReader::new(f).lines();
         let mut ret = Vec::new();
         let mut buf = Vec::new();
@@ -143,5 +133,22 @@ impl Neg for Tensor3 {
             }
         }
         ret
+    }
+}
+
+impl Display for Tensor3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for mat in &self.0 {
+            for row in mat {
+                for col in row {
+                    write!(f, "{:12.6}", col)?;
+                }
+                writeln!(f)?;
+            }
+            writeln!(f)?;
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
