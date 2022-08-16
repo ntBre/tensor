@@ -1,4 +1,7 @@
-use std::ops::{Index, IndexMut, Sub};
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut, Sub},
+};
 
 use crate::Tensor3;
 
@@ -15,11 +18,7 @@ impl Tensor4 {
     }
 
     pub fn print(&self) {
-        println!();
-        for (i, tens) in self.0.iter().enumerate() {
-            println!("I = {i:5}");
-            Tensor3(tens.clone()).print();
-        }
+        println!("{}", self);
     }
 
     /// panics if any of the latter three dimensions is empty
@@ -111,10 +110,7 @@ impl Index<(usize, usize, usize, usize)> for Tensor4 {
 }
 
 impl IndexMut<(usize, usize, usize, usize)> for Tensor4 {
-    fn index_mut(
-        &mut self,
-        index: (usize, usize, usize, usize),
-    ) -> &mut Self::Output {
+    fn index_mut(&mut self, index: (usize, usize, usize, usize)) -> &mut Self::Output {
         &mut self.0[index.0][index.1][index.2][index.3]
     }
 }
@@ -138,5 +134,16 @@ impl Sub<Tensor4> for Tensor4 {
             }
         }
         ret
+    }
+}
+
+impl Display for Tensor4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for (i, tens) in self.0.iter().enumerate() {
+            writeln!(f, "I = {i:5}")?;
+            Tensor3(tens.clone()).print();
+        }
+        Ok(())
     }
 }
