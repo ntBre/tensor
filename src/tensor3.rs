@@ -5,13 +5,22 @@ use std::{
     ops::{Index, IndexMut, Neg},
 };
 
-#[derive(Clone, Debug)]
-pub struct Tensor3(pub(crate) Vec<Vec<Vec<f64>>>);
+use approx::{abs_diff_ne, AbsDiffEq};
+
+#[derive(PartialEq, Clone, Debug)]
+pub struct Tensor3<T>(pub(crate) Vec<Vec<Vec<T>>>);
+
+impl Tensor3<usize> {
+    /// return a new i x j x k tensor
+    pub fn zeros(i: usize, j: usize, k: usize) -> Self {
+        Self(vec![vec![vec![0; k]; j]; i])
+    }
+}
 
 // TODO could probably replace these fields with vectors and fc3 index formula
 // if they're always symmetric. Then I don't have to do all the symmetry stuff
 // myself, I can just sort the indices when I access them
-impl Tensor3 {
+impl Tensor3<f64> {
     /// return a new i x j x k tensor
     pub fn zeros(i: usize, j: usize, k: usize) -> Self {
         Self(vec![vec![vec![0.0; k]; j]; i])
@@ -22,7 +31,8 @@ impl Tensor3 {
     }
 
     pub fn load(filename: &str) -> Self {
-        let f = std::fs::File::open(filename).expect("failed to open tensor file");
+        let f =
+            std::fs::File::open(filename).expect("failed to open tensor file");
         let lines = BufReader::new(f).lines();
         let mut ret = Vec::new();
         let mut buf = Vec::new();
@@ -43,11 +53,6 @@ impl Tensor3 {
         Self(ret)
     }
 
-    /// panics if either of the latter two dimensions is empty
-    pub fn shape(&self) -> (usize, usize, usize) {
-        (self.0.len(), self.0[0].len(), self.0[0][0].len())
-    }
-
     pub fn equal(&self, other: &Self, eps: f64) -> bool {
         if self.shape() != other.shape() {
             return false;
@@ -62,6 +67,16 @@ impl Tensor3 {
             }
         }
         true
+    }
+}
+
+impl<T> Tensor3<T>
+where
+    T: Copy,
+{
+    /// panics if either of the latter two dimensions is empty
+    pub fn shape(&self) -> (usize, usize, usize) {
+        (self.0.len(), self.0[0].len(), self.0[0][0].len())
     }
 
     /// copy values across the 3D diagonals
@@ -106,22 +121,22 @@ impl Tensor3 {
     }
 }
 
-impl Index<(usize, usize, usize)> for Tensor3 {
-    type Output = f64;
+impl<T> Index<(usize, usize, usize)> for Tensor3<T> {
+    type Output = T;
 
     fn index(&self, index: (usize, usize, usize)) -> &Self::Output {
         &self.0[index.0][index.1][index.2]
     }
 }
 
-impl IndexMut<(usize, usize, usize)> for Tensor3 {
+impl<T> IndexMut<(usize, usize, usize)> for Tensor3<T> {
     fn index_mut(&mut self, index: (usize, usize, usize)) -> &mut Self::Output {
         &mut self.0[index.0][index.1][index.2]
     }
 }
 
-impl Neg for Tensor3 {
-    type Output = Tensor3;
+impl Neg for Tensor3<f64> {
+    type Output = Tensor3<f64>;
 
     fn neg(self) -> Self::Output {
         let mut ret = self;
@@ -136,7 +151,7 @@ impl Neg for Tensor3 {
     }
 }
 
-impl Display for Tensor3 {
+impl Display for Tensor3<f64> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
         for mat in &self.0 {
@@ -150,5 +165,31 @@ impl Display for Tensor3 {
             writeln!(f)?;
         }
         Ok(())
+    }
+}
+
+impl AbsDiffEq for Tensor3<f64> {
+    type Epsilon = f64;
+
+    fn default_epsilon() -> Self::Epsilon {
+        f64::default_epsilon()
+    }
+
+    fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+        let (a, b, c) = self.shape();
+        for i in 0..a {
+            for j in 0..b {
+                for k in 0..c {
+                    if abs_diff_ne!(
+                        self[(i, j, k)],
+                        other[(i, j, k)],
+                        epsilon = epsilon
+                    ) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
