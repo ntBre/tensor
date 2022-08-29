@@ -2,7 +2,7 @@ use std::{
     fmt::Display,
     io::BufRead,
     io::BufReader,
-    ops::{Index, IndexMut, Neg},
+    ops::{Index, IndexMut, Neg, Sub},
 };
 
 use approx::{abs_diff_ne, AbsDiffEq};
@@ -144,6 +144,25 @@ impl Neg for Tensor3<f64> {
             for row in mat {
                 for col in row {
                     *col *= -1.0;
+                }
+            }
+        }
+        ret
+    }
+}
+
+impl Sub for Tensor3<f64> {
+    type Output = Self;
+
+    /// panics if self and rhs are not the same size
+    fn sub(self, rhs: Self) -> Self::Output {
+        assert_eq!(self.shape(), rhs.shape());
+        let (a, b, c) = self.shape();
+        let mut ret = Self::zeros(a, b, c);
+        for i in 0..a {
+            for j in 0..b {
+                for k in 0..c {
+                    ret[(i, j, k)] = self[(i, j, k)] - rhs[(i, j, k)];
                 }
             }
         }
