@@ -68,6 +68,39 @@ impl Tensor3<f64> {
         }
         true
     }
+
+    /// apply `f` to every element of `self` and return a new Tensor3
+    pub fn map<F>(&self, mut f: F) -> Self
+    where
+        F: FnMut(f64) -> f64,
+    {
+        let (a, b, c) = self.shape();
+        let mut ret = Self::zeros(a, b, c);
+        for i in 0..a {
+            for j in 0..b {
+                for k in 0..c {
+                    ret[(i, j, k)] = f(self[(i, j, k)]);
+                }
+            }
+        }
+        ret
+    }
+
+    /// panics if `self` is empty
+    pub fn max(&self) -> f64 {
+        let (a, b, c) = self.shape();
+        let mut ret = self[(0, 0, 0)];
+        for i in 0..a {
+            for j in 0..b {
+                for k in 0..c {
+                    if self[(i, j, k)] > ret {
+                        ret = self[(i, j, k)];
+                    }
+                }
+            }
+        }
+        ret
+    }
 }
 
 impl<T> Tensor3<T>
