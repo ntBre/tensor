@@ -1,5 +1,5 @@
 use std::{
-    fmt::Display,
+    fmt::{Display, LowerExp},
     io::BufRead,
     io::BufReader,
     ops::{Index, IndexMut, Neg, Sub},
@@ -177,6 +177,23 @@ impl Display for Tensor3<f64> {
             for row in mat {
                 for col in row {
                     write!(f, "{:12.6}", col)?;
+                }
+                writeln!(f)?;
+            }
+            writeln!(f)?;
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl LowerExp for Tensor3<f64> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for mat in &self.0 {
+            for row in mat {
+                for col in row {
+                    write!(f, "{:12.2e}", col)?;
                 }
                 writeln!(f)?;
             }
