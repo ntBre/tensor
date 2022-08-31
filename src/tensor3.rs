@@ -101,6 +101,11 @@ impl Tensor3<f64> {
         }
         ret
     }
+
+    /// return the absolute value of self
+    pub fn abs(&self) -> Self {
+	self.map(|s| s.abs())
+    }
 }
 
 impl<T> Tensor3<T>
