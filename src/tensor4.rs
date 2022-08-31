@@ -1,9 +1,36 @@
 use std::{
-    fmt::Display,
+    fmt::{Display, LowerExp},
     ops::{Index, IndexMut, Sub},
 };
 
 use crate::Tensor3;
+
+#[cfg(test)]
+mod tests {
+    use rand::Rng;
+
+    use super::*;
+
+    extern crate test;
+    #[bench]
+    fn bench_index(b: &mut test::Bencher) {
+        let n = 9;
+        let t = Tensor4::zeros(n, n, n, n);
+        let mut rng = rand::thread_rng();
+        b.iter(|| {
+            let a = n as f64 * rng.gen::<f64>();
+            let b = n as f64 * rng.gen::<f64>();
+            let c = n as f64 * rng.gen::<f64>();
+            let d = n as f64 * rng.gen::<f64>();
+            t[(
+                a as usize,
+                b as usize,
+                c as usize,
+                d as usize,
+            )]
+        });
+    }
+}
 
 #[derive(Clone)]
 pub struct Tensor4(Vec<Vec<Vec<Vec<f64>>>>);
@@ -110,7 +137,10 @@ impl Index<(usize, usize, usize, usize)> for Tensor4 {
 }
 
 impl IndexMut<(usize, usize, usize, usize)> for Tensor4 {
-    fn index_mut(&mut self, index: (usize, usize, usize, usize)) -> &mut Self::Output {
+    fn index_mut(
+        &mut self,
+        index: (usize, usize, usize, usize),
+    ) -> &mut Self::Output {
         &mut self.0[index.0][index.1][index.2][index.3]
     }
 }
