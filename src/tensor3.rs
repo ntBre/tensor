@@ -203,6 +203,23 @@ impl Sub for Tensor3<f64> {
     }
 }
 
+impl Display for Tensor3<usize> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for mat in &self.0 {
+            for row in mat {
+                for col in row {
+                    write!(f, "{:5}", col)?;
+                }
+                writeln!(f)?;
+            }
+            writeln!(f)?;
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
 impl Display for Tensor3<f64> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
