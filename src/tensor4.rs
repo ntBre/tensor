@@ -147,3 +147,14 @@ impl Display for Tensor4 {
         Ok(())
     }
 }
+
+impl LowerExp for Tensor4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f)?;
+        for (i, tens) in self.0.iter().enumerate() {
+            writeln!(f, "I = {i:5}")?;
+            writeln!(f, "{:e}", Tensor3(tens.clone()))?;
+        }
+        Ok(())
+    }
+}
