@@ -3,8 +3,6 @@ use std::{
     ops::{Index, IndexMut, Sub},
 };
 
-use crate::Tensor3;
-
 #[cfg(test)]
 mod tests {
     use rand::Rng;
@@ -22,18 +20,19 @@ mod tests {
             let b = n as f64 * rng.gen::<f64>();
             let c = n as f64 * rng.gen::<f64>();
             let d = n as f64 * rng.gen::<f64>();
-            t[(
-                a as usize,
-                b as usize,
-                c as usize,
-                d as usize,
-            )]
+            t[(a as usize, b as usize, c as usize, d as usize)]
         });
     }
 }
 
 #[derive(Clone)]
-pub struct Tensor4(Vec<Vec<Vec<Vec<f64>>>>);
+pub struct Tensor4 {
+    pub data: Vec<f64>,
+    d1: usize,
+    d2: usize,
+    d3: usize,
+    d4: usize,
+}
 
 // TODO could probably replace these fields with vectors and fc3 index formula
 // if they're always symmetric. Then I don't have to do all the symmetry stuff
@@ -41,7 +40,13 @@ pub struct Tensor4(Vec<Vec<Vec<Vec<f64>>>>);
 impl Tensor4 {
     /// return a new i x j x k x l tensor
     pub fn zeros(i: usize, j: usize, k: usize, l: usize) -> Self {
-        Self(vec![vec![vec![vec![0.0; l]; k]; j]; i])
+        Self {
+            data: vec![0.0; i * j * k * l],
+            d1: i,
+            d2: j,
+            d3: k,
+            d4: l,
+        }
     }
 
     pub fn print(&self) {
@@ -50,23 +55,20 @@ impl Tensor4 {
 
     /// panics if any of the latter three dimensions is empty
     pub fn shape(&self) -> (usize, usize, usize, usize) {
-        (
-            self.0.len(),
-            self.0[0].len(),
-            self.0[0][0].len(),
-            self.0[0][0][0].len(),
-        )
+        (self.d1, self.d2, self.d3, self.d4)
     }
 
     pub fn equal(&self, other: &Self, eps: f64) -> bool {
         if self.shape() != other.shape() {
             return false;
         }
-        for (i, tens) in self.0.iter().enumerate() {
-            for (j, mat) in tens.iter().enumerate() {
-                for (k, row) in mat.iter().enumerate() {
-                    for (l, col) in row.iter().enumerate() {
-                        if f64::abs(col - other[(i, j, k, l)]) > eps {
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
+                    for l in 0..self.d4 {
+                        if f64::abs(self[(i, j, k, l)] - other[(i, j, k, l)])
+                            > eps
+                        {
                             return false;
                         }
                     }
@@ -113,12 +115,13 @@ impl Tensor4 {
     /// panics if self is empty
     pub fn max(&self) -> f64 {
         let mut max = self[(0, 0, 0, 0)];
-        for tens in &self.0 {
-            for mat in tens {
-                for row in mat {
-                    for col in row {
-                        if col > &max {
-                            max = *col;
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
+                    for l in 0..self.d4 {
+                        let col = self[(i, j, k, l)];
+                        if col > max {
+                            max = col;
                         }
                     }
                 }
@@ -131,8 +134,52 @@ impl Tensor4 {
 impl Index<(usize, usize, usize, usize)> for Tensor4 {
     type Output = f64;
 
+    #[inline]
     fn index(&self, index: (usize, usize, usize, usize)) -> &Self::Output {
-        &self.0[index.0][index.1][index.2][index.3]
+        let index = self.index_inner(index);
+        &self.data[index]
+    }
+}
+
+impl Tensor4 {
+    /// index = x + y * D1 + z * D1 * D2 + t * D1 * D2 * D3, but use
+    /// Horner's rule
+    #[inline]
+    fn index_inner(&self, index: (usize, usize, usize, usize)) -> usize {
+        let (x, y, z, t) = index;
+        let index = x + self.d1 * (y + self.d2 * (z + self.d3 * t));
+        index
+    }
+
+    /// returns the slice of the first two dimensions from `start` to `end` with
+    /// fixed final dimensions `k` and `l`
+    pub fn submatrix(
+        &self,
+        start: (usize, usize),
+        end: (usize, usize),
+        k: usize,
+        l: usize,
+    ) -> &[f64] {
+        let (a, b) = start;
+        let (c, d) = end;
+        let start = self.index_inner((a, b, k, l));
+        let end = self.index_inner((c, d, k, l));
+        &self.data[start..end]
+    }
+
+    pub fn set_submatrix(
+        &mut self,
+        start: (usize, usize),
+        end: (usize, usize),
+        k: usize,
+        l: usize,
+        data: &[f64],
+    ) {
+        let (a, b) = start;
+        let (c, d) = end;
+        let start = self.index_inner((a, b, k, l));
+        let end = self.index_inner((c, d, k, l));
+	self.data[start..end].copy_from_slice(data);
     }
 }
 
@@ -141,7 +188,8 @@ impl IndexMut<(usize, usize, usize, usize)> for Tensor4 {
         &mut self,
         index: (usize, usize, usize, usize),
     ) -> &mut Self::Output {
-        &mut self.0[index.0][index.1][index.2][index.3]
+        let index = self.index_inner(index);
+        &mut self.data[index]
     }
 }
 
@@ -154,10 +202,11 @@ impl Sub<Tensor4> for Tensor4 {
         }
         let (a, b, c, d) = self.shape();
         let mut ret = Self::Output::zeros(a, b, c, d);
-        for (i, tens) in self.0.iter().enumerate() {
-            for (j, mat) in tens.iter().enumerate() {
-                for (k, row) in mat.iter().enumerate() {
-                    for (l, col) in row.iter().enumerate() {
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
+                    for l in 0..self.d4 {
+                        let col = self[(i, j, k, l)];
                         ret[(i, j, k, l)] = col - rhs[(i, j, k, l)];
                     }
                 }
@@ -170,10 +219,10 @@ impl Sub<Tensor4> for Tensor4 {
 impl Display for Tensor4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        for (i, tens) in self.0.iter().enumerate() {
-            writeln!(f, "I = {i:5}")?;
-            Tensor3(tens.clone()).print();
-        }
+        // for (i, tens) in self.0.iter().enumerate() {
+        //     writeln!(f, "I = {i:5}")?;
+        //     Tensor3(tens.clone()).print();
+        // }
         Ok(())
     }
 }
@@ -181,10 +230,10 @@ impl Display for Tensor4 {
 impl LowerExp for Tensor4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        for (i, tens) in self.0.iter().enumerate() {
-            writeln!(f, "I = {i:5}")?;
-            writeln!(f, "{:e}", Tensor3(tens.clone()))?;
-        }
+        // for (i, tens) in self.0.iter().enumerate() {
+        //     writeln!(f, "I = {i:5}")?;
+        //     writeln!(f, "{:e}", Tensor3(tens.clone()))?;
+        // }
         Ok(())
     }
 }

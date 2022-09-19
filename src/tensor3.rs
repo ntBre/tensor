@@ -7,13 +7,23 @@ use std::{
 
 use approx::{abs_diff_ne, AbsDiffEq};
 
-#[derive(PartialEq, Clone, Debug)]
-pub struct Tensor3<T>(pub(crate) Vec<Vec<Vec<T>>>);
+#[derive(Clone, PartialEq)]
+pub struct Tensor3<T> {
+    pub data: Vec<T>,
+    d1: usize,
+    d2: usize,
+    d3: usize,
+}
 
 impl Tensor3<usize> {
     /// return a new i x j x k tensor
     pub fn zeros(i: usize, j: usize, k: usize) -> Self {
-        Self(vec![vec![vec![0; k]; j]; i])
+        Self {
+            data: vec![0; i * j * k],
+            d1: i,
+            d2: j,
+            d3: k,
+        }
     }
 }
 
@@ -23,7 +33,12 @@ impl Tensor3<usize> {
 impl Tensor3<f64> {
     /// return a new i x j x k tensor
     pub fn zeros(i: usize, j: usize, k: usize) -> Self {
-        Self(vec![vec![vec![0.0; k]; j]; i])
+        Self {
+            data: vec![0.0; i * j * k],
+            d1: i,
+            d2: j,
+            d3: k,
+        }
     }
 
     pub fn print(&self) {
@@ -34,13 +49,13 @@ impl Tensor3<f64> {
         let f =
             std::fs::File::open(filename).expect("failed to open tensor file");
         let lines = BufReader::new(f).lines();
-        let mut ret = Vec::new();
+        let mut hold = Vec::new();
         let mut buf = Vec::new();
         for line in lines.flatten() {
             let mut fields = line.split_whitespace().peekable();
             if fields.peek().is_none() {
                 // in between chunks
-                ret.push(buf);
+                hold.push(buf);
                 buf = Vec::new();
             } else {
                 let row = fields
@@ -49,17 +64,28 @@ impl Tensor3<f64> {
                 buf.push(row);
             }
         }
-        ret.push(buf);
-        Self(ret)
+        hold.push(buf);
+        let a = hold.len();
+        let b = hold[0].len();
+        let c = hold[0][0].len();
+        let mut ret = Self::zeros(a, b, c);
+        for i in 0..a {
+            for j in 0..b {
+                for k in 0..c {
+                    ret[(i, j, k)] = hold[i][j][k];
+                }
+            }
+        }
+        ret
     }
 
     pub fn equal(&self, other: &Self, eps: f64) -> bool {
         if self.shape() != other.shape() {
             return false;
         }
-        for (i, mat) in self.0.iter().enumerate() {
-            for (j, row) in mat.iter().enumerate() {
-                for k in 0..row.len() {
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
                     if f64::abs(self[(i, j, k)] - other[(i, j, k)]) > eps {
                         return false;
                     }
@@ -104,7 +130,7 @@ impl Tensor3<f64> {
 
     /// return the absolute value of self
     pub fn abs(&self) -> Self {
-	self.map(|s| s.abs())
+        self.map(|s| s.abs())
     }
 }
 
@@ -114,7 +140,7 @@ where
 {
     /// panics if either of the latter two dimensions is empty
     pub fn shape(&self) -> (usize, usize, usize) {
-        (self.0.len(), self.0[0].len(), self.0[0][0].len())
+        (self.d1, self.d2, self.d3)
     }
 
     /// copy values across the 3D diagonals
@@ -157,19 +183,57 @@ where
             }
         }
     }
+
+    pub fn set_submatrix(
+        &mut self,
+        start: (usize, usize),
+        end: (usize, usize),
+        k: usize,
+        data: &[T],
+    ) {
+        let (a, b) = start;
+        let (c, d) = end;
+        let start = self.index_inner((a, b, k));
+        let end = self.index_inner((c, d, k));
+        self.data[start..end].copy_from_slice(data);
+    }
+}
+
+impl<T> Tensor3<T> {
+    pub fn index_inner(&self, index: (usize, usize, usize)) -> usize {
+        let (x, y, z) = index;
+        let index = x + self.d1 * (y + self.d2 * z);
+        index
+    }
+
+    /// returns the slice of the first two dimensions from `start` to `end` with
+    /// fixed final dimension `k`
+    pub fn submatrix(
+        &self,
+        start: (usize, usize),
+        end: (usize, usize),
+        k: usize,
+    ) -> &[T] {
+        let (a, b) = start;
+        let (c, d) = end;
+        let start = self.index_inner((a, b, k));
+        let end = self.index_inner((c, d, k));
+        &self.data[start..end]
+    }
 }
 
 impl<T> Index<(usize, usize, usize)> for Tensor3<T> {
     type Output = T;
 
     fn index(&self, index: (usize, usize, usize)) -> &Self::Output {
-        &self.0[index.0][index.1][index.2]
+        &self.data[self.index_inner(index)]
     }
 }
 
 impl<T> IndexMut<(usize, usize, usize)> for Tensor3<T> {
     fn index_mut(&mut self, index: (usize, usize, usize)) -> &mut Self::Output {
-        &mut self.0[index.0][index.1][index.2]
+        let i = self.index_inner(index);
+        &mut self.data[i]
     }
 }
 
@@ -178,12 +242,8 @@ impl Neg for Tensor3<f64> {
 
     fn neg(self) -> Self::Output {
         let mut ret = self;
-        for mat in &mut ret.0 {
-            for row in mat {
-                for col in row {
-                    *col *= -1.0;
-                }
-            }
+        for col in &mut ret.data {
+            *col *= -1.0;
         }
         ret
     }
@@ -211,9 +271,10 @@ impl Sub for Tensor3<f64> {
 impl Display for Tensor3<usize> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        for mat in &self.0 {
-            for row in mat {
-                for col in row {
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
+                    let col = self[(i, j, k)];
                     write!(f, "{:5}", col)?;
                 }
                 writeln!(f)?;
@@ -228,9 +289,10 @@ impl Display for Tensor3<usize> {
 impl Display for Tensor3<f64> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        for mat in &self.0 {
-            for row in mat {
-                for col in row {
+        for i in 0..self.d1 {
+            for j in 0..self.d2 {
+                for k in 0..self.d3 {
+                    let col = self[(i, j, k)];
                     write!(f, "{:12.6}", col)?;
                 }
                 writeln!(f)?;
@@ -245,16 +307,16 @@ impl Display for Tensor3<f64> {
 impl LowerExp for Tensor3<f64> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        for mat in &self.0 {
-            for row in mat {
-                for col in row {
-                    write!(f, "{:12.2e}", col)?;
-                }
-                writeln!(f)?;
-            }
-            writeln!(f)?;
-            writeln!(f)?;
-        }
+        // for mat in &self.0 {
+        //     for row in mat {
+        //         for col in row {
+        //             write!(f, "{:12.2e}", col)?;
+        //         }
+        //         writeln!(f)?;
+        //     }
+        //     writeln!(f)?;
+        //     writeln!(f)?;
+        // }
         Ok(())
     }
 }
