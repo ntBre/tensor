@@ -219,10 +219,20 @@ impl Sub<Tensor4> for Tensor4 {
 impl Display for Tensor4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f)?;
-        // for (i, tens) in self.0.iter().enumerate() {
-        //     writeln!(f, "I = {i:5}")?;
-        //     Tensor3(tens.clone()).print();
-        // }
+        let (mi, mj, mk, ml) = self.shape();
+        for i in 0..mi {
+            writeln!(f, "I = {i:5}")?;
+            for j in 0..mj {
+                for k in 0..mk {
+                    for l in 0..ml {
+                        write!(f, "{:12.6}", self[(i, j, k, l)])?;
+                    }
+                    writeln!(f)?;
+                }
+                writeln!(f)?;
+                writeln!(f)?;
+            }
+        }
         Ok(())
     }
 }
