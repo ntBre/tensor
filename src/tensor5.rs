@@ -1,9 +1,9 @@
-use std::ops::{Index, IndexMut};
+use std::{ops::{Index, IndexMut}, fmt::Display};
 
 use crate::Tensor4;
 
 pub struct Tensor5 {
-    data: Vec<Tensor4>,
+    pub data: Vec<Tensor4>,
 }
 
 impl Tensor5 {
@@ -33,5 +33,17 @@ impl IndexMut<(usize, usize, usize, usize, usize)> for Tensor5 {
     ) -> &mut Self::Output {
         let (i, j, k, l, m) = index;
         &mut self.data[i][(j, k, l, m)]
+    }
+}
+
+
+impl Display for Tensor5 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	writeln!(f)?;
+	for (i, d) in self.data.iter().enumerate() {
+	    write!(f, "H = {i}")?;
+	    write!(f, "{}", d)?;
+	}
+	Ok(())
     }
 }
