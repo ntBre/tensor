@@ -147,8 +147,7 @@ impl Tensor4 {
     #[inline]
     fn index_inner(&self, index: (usize, usize, usize, usize)) -> usize {
         let (x, y, z, t) = index;
-        let index = x + self.d1 * (y + self.d2 * (z + self.d3 * t));
-        index
+        x + self.d1 * (y + self.d2 * (z + self.d3 * t))
     }
 
     /// returns the slice of the first two dimensions from `start` to `end` with
@@ -179,7 +178,7 @@ impl Tensor4 {
         let (c, d) = end;
         let start = self.index_inner((a, b, k, l));
         let end = self.index_inner((c, d, k, l));
-	self.data[start..end].copy_from_slice(data);
+        self.data[start..end].copy_from_slice(data);
     }
 }
 
