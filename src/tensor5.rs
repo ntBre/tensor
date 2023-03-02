@@ -1,4 +1,7 @@
-use std::{ops::{Index, IndexMut}, fmt::Display};
+use std::{
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
 
 use crate::Tensor4;
 
@@ -36,14 +39,13 @@ impl IndexMut<(usize, usize, usize, usize, usize)> for Tensor5 {
     }
 }
 
-
 impl Display for Tensor5 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-	writeln!(f)?;
-	for (i, d) in self.data.iter().enumerate() {
-	    write!(f, "H = {i}")?;
-	    write!(f, "{}", d)?;
-	}
-	Ok(())
+        writeln!(f)?;
+        for (i, d) in self.data.iter().enumerate() {
+            write!(f, "H = {i}")?;
+            write!(f, "{}", d)?;
+        }
+        Ok(())
     }
 }
