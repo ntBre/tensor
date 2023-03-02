@@ -78,40 +78,6 @@ impl Tensor4 {
         true
     }
 
-    pub fn fill4a(&mut self, ny: usize) {
-        for q in 0..ny {
-            for p in 0..=q {
-                for n in 0..=p {
-                    for m in 0..=n {
-                        self[(n, m, p, q)] = self[(m, n, p, q)];
-                        self[(n, p, m, q)] = self[(m, n, p, q)];
-                        self[(n, p, q, m)] = self[(m, n, p, q)];
-                        self[(m, p, n, q)] = self[(m, n, p, q)];
-                        self[(p, m, n, q)] = self[(m, n, p, q)];
-                        self[(p, n, m, q)] = self[(m, n, p, q)];
-                        self[(p, n, q, m)] = self[(m, n, p, q)];
-                        self[(m, p, q, n)] = self[(m, n, p, q)];
-                        self[(p, m, q, n)] = self[(m, n, p, q)];
-                        self[(p, q, m, n)] = self[(m, n, p, q)];
-                        self[(p, q, n, m)] = self[(m, n, p, q)];
-                        self[(m, n, q, p)] = self[(m, n, p, q)];
-                        self[(n, m, q, p)] = self[(m, n, p, q)];
-                        self[(n, q, m, p)] = self[(m, n, p, q)];
-                        self[(n, q, p, m)] = self[(m, n, p, q)];
-                        self[(m, q, n, p)] = self[(m, n, p, q)];
-                        self[(q, m, n, p)] = self[(m, n, p, q)];
-                        self[(q, n, m, p)] = self[(m, n, p, q)];
-                        self[(q, n, p, m)] = self[(m, n, p, q)];
-                        self[(m, q, p, n)] = self[(m, n, p, q)];
-                        self[(q, m, p, n)] = self[(m, n, p, q)];
-                        self[(q, p, m, n)] = self[(m, n, p, q)];
-                        self[(q, p, n, m)] = self[(m, n, p, q)];
-                    }
-                }
-            }
-        }
-    }
-
     /// panics if self is empty
     pub fn max(&self) -> f64 {
         let mut max = self[(0, 0, 0, 0)];

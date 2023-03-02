@@ -143,47 +143,6 @@ where
         (self.d1, self.d2, self.d3)
     }
 
-    /// copy values across the 3D diagonals
-    pub fn fill3b(&mut self) {
-        for m in 0..3 {
-            for n in 0..m {
-                for p in 0..n {
-                    self[(n, m, p)] = self[(m, n, p)];
-                    self[(n, p, m)] = self[(m, n, p)];
-                    self[(m, p, n)] = self[(m, n, p)];
-                    self[(p, m, n)] = self[(m, n, p)];
-                    self[(p, n, m)] = self[(m, n, p)];
-                }
-                self[(n, m, n)] = self[(m, n, n)];
-                self[(n, n, m)] = self[(m, n, n)];
-            }
-            for p in 0..m {
-                self[(m, p, m)] = self[(m, m, p)];
-                self[(p, m, m)] = self[(m, m, p)];
-            }
-        }
-    }
-
-    pub fn fill3a(&mut self, nsx: usize) {
-        for p in 0..nsx {
-            for n in 0..p {
-                for m in 0..n {
-                    self[(n, m, p)] = self[(m, n, p)];
-                    self[(n, p, m)] = self[(m, n, p)];
-                    self[(m, p, n)] = self[(m, n, p)];
-                    self[(p, m, n)] = self[(m, n, p)];
-                    self[(p, n, m)] = self[(m, n, p)];
-                }
-                self[(n, p, n)] = self[(n, n, p)];
-                self[(p, n, n)] = self[(n, n, p)];
-            }
-            for m in 0..p {
-                self[(p, m, p)] = self[(m, p, p)];
-                self[(p, p, m)] = self[(m, p, p)];
-            }
-        }
-    }
-
     pub fn set_submatrix(
         &mut self,
         start: (usize, usize),
