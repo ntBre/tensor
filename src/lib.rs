@@ -1,4 +1,4 @@
-#![feature(test)]
+#![cfg_attr(test, feature(test))]
 
 pub mod tensor3;
 pub mod tensor4;
