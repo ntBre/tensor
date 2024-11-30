@@ -18,13 +18,7 @@ pub struct Tensor4 {
 impl Tensor4 {
     /// return a new i x j x k x l tensor
     pub fn zeros(i: usize, j: usize, k: usize, l: usize) -> Self {
-        Self {
-            data: vec![0.0; i * j * k * l],
-            d1: i,
-            d2: j,
-            d3: k,
-            d4: l,
-        }
+        Self { data: vec![0.0; i * j * k * l], d1: i, d2: j, d3: k, d4: l }
     }
 
     pub fn print(&self) {

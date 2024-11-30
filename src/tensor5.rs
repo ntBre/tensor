@@ -11,9 +11,7 @@ pub struct Tensor5 {
 
 impl Tensor5 {
     pub fn zeros(i: usize, j: usize, k: usize, l: usize, m: usize) -> Self {
-        Self {
-            data: vec![Tensor4::zeros(j, k, l, m); i],
-        }
+        Self { data: vec![Tensor4::zeros(j, k, l, m); i] }
     }
 }
 
