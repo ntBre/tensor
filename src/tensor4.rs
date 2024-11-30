@@ -3,28 +3,6 @@ use std::{
     ops::{Index, IndexMut, Sub},
 };
 
-#[cfg(test)]
-mod tests {
-    use rand::Rng;
-
-    use super::*;
-
-    extern crate test;
-    #[bench]
-    fn bench_index(b: &mut test::Bencher) {
-        let n = 9;
-        let t = Tensor4::zeros(n, n, n, n);
-        let mut rng = rand::thread_rng();
-        b.iter(|| {
-            let a = n as f64 * rng.gen::<f64>();
-            let b = n as f64 * rng.gen::<f64>();
-            let c = n as f64 * rng.gen::<f64>();
-            let d = n as f64 * rng.gen::<f64>();
-            t[(a as usize, b as usize, c as usize, d as usize)]
-        });
-    }
-}
-
 #[derive(Clone)]
 pub struct Tensor4 {
     pub data: Vec<f64>,
