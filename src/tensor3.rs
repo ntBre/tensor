@@ -18,12 +18,7 @@ pub struct Tensor3<T> {
 impl Tensor3<usize> {
     /// return a new i x j x k tensor
     pub fn zeros(i: usize, j: usize, k: usize) -> Self {
-        Self {
-            data: vec![0; i * j * k],
-            d1: i,
-            d2: j,
-            d3: k,
-        }
+        Self { data: vec![0; i * j * k], d1: i, d2: j, d3: k }
     }
 }
 
@@ -33,12 +28,7 @@ impl Tensor3<usize> {
 impl Tensor3<f64> {
     /// return a new i x j x k tensor
     pub fn zeros(i: usize, j: usize, k: usize) -> Self {
-        Self {
-            data: vec![0.0; i * j * k],
-            d1: i,
-            d2: j,
-            d3: k,
-        }
+        Self { data: vec![0.0; i * j * k], d1: i, d2: j, d3: k }
     }
 
     pub fn print(&self) {
@@ -51,7 +41,7 @@ impl Tensor3<f64> {
         let lines = BufReader::new(f).lines();
         let mut hold = Vec::new();
         let mut buf = Vec::new();
-        for line in lines.flatten() {
+        for line in lines.map(Result::unwrap) {
             let mut fields = line.split_whitespace().peekable();
             if fields.peek().is_none() {
                 // in between chunks
@@ -159,10 +149,8 @@ where
 }
 
 impl<T> Tensor3<T> {
-    pub fn index_inner(&self, index: (usize, usize, usize)) -> usize {
-        let (x, y, z) = index;
-        let index = x + self.d1 * (y + self.d2 * z);
-        index
+    pub fn index_inner(&self, (x, y, z): (usize, usize, usize)) -> usize {
+        x + self.d1 * (y + self.d2 * z)
     }
 
     /// returns the slice of the first two dimensions from `start` to `end` with
@@ -302,6 +290,6 @@ impl AbsDiffEq for Tensor3<f64> {
                 }
             }
         }
-        return true;
+        true
     }
 }
